@@ -1,11 +1,18 @@
 import dramatiq
 import requests
+<<<<<<< HEAD:crowdsale/crowdsale/tasks.py
 from .settings import config
+=======
+>>>>>>> c7e2de8bb0712cfa60916886f1dfb5782ec86796:crowdsale/transaction/tasks.py
 from .models import UsdRate
 
 
 @dramatiq.actor(max_retries=0)
 def update_rates() -> None:
+    try:
+        from crowdsale.settings import config
+    except:
+        print('error in task')
     payload = {
         'fsym': 'USD',
         'tsyms': [token.cryptocompare_symbol for token in config.tokens],
