@@ -1,4 +1,4 @@
-.docker
+.docker/
 .env
 config.yaml
-.idea
+.idea/
