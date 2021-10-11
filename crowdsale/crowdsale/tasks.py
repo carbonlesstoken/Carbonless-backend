@@ -1,6 +1,6 @@
 import dramatiq
 import requests
-from crowdsale.settings import config
+from .settings import config
 from .models import UsdRate
 
 

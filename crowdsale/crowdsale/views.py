@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.response import Response
-from crowdsale.settings import config
+from .settings import config
 from web3 import Web3
 from eth_account import Account, messages
 from .models import UsdRate

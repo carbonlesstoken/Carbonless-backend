@@ -31,7 +31,6 @@ INSTALLED_APPS = [
     'django_dramatiq',
     'rest_framework',
     'drf_yasg',
-    'transaction',
 ]
 
 MIDDLEWARE = [

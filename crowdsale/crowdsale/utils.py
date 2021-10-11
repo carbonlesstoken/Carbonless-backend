@@ -16,10 +16,9 @@ class Token:
 @dataclass
 class Config:
     django_secret_key: str
-    django_static_url: str
     django_allowed_hosts: List[str]
-    crowdsale_contract_address: str
-    crowdsale_contract_abi: str
+    carbonsale_contract_address: str
+    carbonsale_contract_abi: str
     token_decimals: int
     private_key: str
     cryptocompare_api_url: str
@@ -28,16 +27,16 @@ class Config:
     rates_update_timeout_minutes: int
     tokens: List[Token]
     debug: Optional[bool] = False
-    crowdsale_contract: contract = field(init=False, default=None)
+    carbonsale_contract: contract = field(init=False, default=None)
     w3: Web3 = field(init=False, default=None)
 
     def __post_init__(self):
         self.w3 = Web3(HTTPProvider(self.node))
         self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-        crowdsale_address_checksum = Web3.toChecksumAddress(self.crowdsale_contract_address)
-        self.crowdsale_contract = self.w3.eth.contract(
-            address=crowdsale_address_checksum,
-            abi=self.crowdsale_contract_abi,
+        carbonsale_address_checksum = Web3.toChecksumAddress(self.carbonsale_contract_address)
+        self.carbonsale_contract = self.w3.eth.contract(
+            address=carbonsale_address_checksum,
+            abi=self.carbonsale_contract_abi,
         )
 
     def get_token_by_address(self, address: ChecksumAddress):
