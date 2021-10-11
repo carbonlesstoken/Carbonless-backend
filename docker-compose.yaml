@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres
+    env_file: .env
+    volumes:
+      - ./.docker/postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      crowdsale-backend:
+  rabbitmq:
+    image: rabbitmq:3.8.11
+    env_file: .env
+    restart: unless-stopped
+    networks:
+      crowdsale-backend:
+  web:
+    env_file: .env
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+      - rabbitmq
+    volumes:
+      - .:/app
+    ports:
+      - "${DOCKER_EXPOSE_PORT?8000}:${DJANGO_PORT?8000}"
+    restart: unless-stopped
+    command: "python crowdsale/manage.py runserver 0.0.0.0:${DJANGO_PORT?8000}"
+    networks:
+      crowdsale-backend:
+  dramatiq:
+    env_file: .env
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+      - rabbitmq
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    command: python crowdsale/manage.py rundramatiq
+    networks:
+      crowdsale-backend:
+  scheduler:
+    env_file: .env
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+      - rabbitmq
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    command: python crowdsale/manage.py run_scheduler
+    networks:
+      crowdsale-backend:
+
+networks:
+  crowdsale-backend:

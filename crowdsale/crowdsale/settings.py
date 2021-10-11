@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import os
 import yaml
 from pathlib import Path
-from crowdsale.utils import Config
+from transaction.utils import Config
 from marshmallow_dataclass import class_schema
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -151,7 +151,7 @@ USE_X_FORWARDED_HOST = True
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-with open(os.path.dirname(__file__) + '/../config.yaml') as f:
+with open(os.path.dirname(__file__) + '/../../config.yaml') as f:
     config_data = yaml.safe_load(f)
 
 config: Config = class_schema(Config)().load(config_data)

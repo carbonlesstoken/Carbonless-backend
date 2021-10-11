@@ -1,7 +1,7 @@
 from apscheduler.schedulers.background import BlockingScheduler
 from django.core.management.base import BaseCommand
-from crowdsale.transaction.tasks import update_rates
-from crowdsale.settings import config
+from transaction.tasks import update_rates
+from crowdsale.crowdsale.settings import config
 
 
 class Command(BaseCommand):
