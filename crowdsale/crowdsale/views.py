@@ -5,8 +5,11 @@ from rest_framework.response import Response
 from .settings import config
 from web3 import Web3
 from eth_account import Account, messages
-from .models import UsdRate
+from .models import UsdRate, Investor
 from datetime import datetime, timedelta
+from django.core.exceptions import ValidationError
+from django.db.utils import IntegrityError
+from django.core.validators import validate_email
 
 
 @swagger_auto_schema(
@@ -59,15 +62,14 @@ def signature_view(request):
 
     contract = config.crowdsale_contract
 
-    current_price = contract.functions.price.call()
-
+    current_price = contract.functions.price().call() * 10 ** 9
     usd_rate = UsdRate.objects.get(symbol=token.cryptocompare_symbol)
     usd_amount_to_pay = amount_to_pay / usd_rate.value
     decimals = 10 ** (config.token_decimals - token.decimals)
     amount_to_receive = int(usd_amount_to_pay / current_price * decimals)
-    #
-    if usd_amount_to_pay > 500000:
+    if usd_amount_to_pay > 10000000:
         amount_to_receive = amount_to_receive * 1.04
+    amount_to_receive = int(amount_to_receive)
     signature_expires_at = datetime.now() + timedelta(minutes=config.signature_expiration_timeout_minutes)
     signature_expiration_timestamp = int(signature_expires_at.timestamp())
     print([token_address_checksum, amount_to_pay, amount_to_receive, signature_expiration_timestamp])
@@ -90,8 +92,14 @@ def signature_view(request):
 
 @swagger_auto_schema(
     method='GET',
-    operation_description='Stage data view',
-    responses={200: current_price_usd}
+    operation_description='Price',
+    responses={
+        200: openapi.Response(
+            description='Token price',
+            schema=openapi.Schema(
+                type=openapi.TYPE_STRING,
+            )
+        )}
 )
 @api_view(http_method_names=['GET'])
 def stage_view(request):
@@ -143,3 +151,92 @@ def tokens_view(request):
         response.append(token_serialized)
 
     return Response(response)
+
+
+@swagger_auto_schema(
+    method='POST',
+    operation_description='Whitelist view',
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'address': openapi.Schema(type=openapi.TYPE_STRING),
+            'email': openapi.Schema(type=openapi.TYPE_STRING),
+        },
+        required=['address', 'email']
+    ),
+    responses={
+        200: openapi.Response(
+            description='Whitelist success reponse',
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'detail': openapi.Schema(type=openapi.TYPE_STRING),
+                },
+            )
+        ),
+        400: openapi.Response(
+            description='Invalid parameters response',
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'detail': openapi.Schema(type=openapi.TYPE_STRING),
+                },
+            )
+        ),
+    }
+)
+@api_view(http_method_names=['POST'])
+def whitelist_view(request):
+    data = request.data
+    address = data['address']
+    email = data['email']
+
+    try:
+        validate_email(email)
+    except ValidationError:
+        return Response({'detail': 'INVALID_EMAIL'}, status=400)
+
+    try:
+        address = Web3.toChecksumAddress(address)
+    except ValueError:
+        return Response({'detail': 'INVALID_ADDRESS'}, status=400)
+
+    try:
+        Investor(address=address, email=email).save()
+    except IntegrityError:
+        return Response({'detail': 'ALREADY_REGISTERED'}, status=400)
+
+    return Response({'detail': 'OK'})
+
+
+@swagger_auto_schema(
+    method='GET',
+    operation_description='Is whitelisted view',
+    responses={
+        200: openapi.Response(
+            description='Is address whitelisted',
+            schema=openapi.Schema(
+                type=openapi.TYPE_BOOLEAN,
+            )
+        ),
+        400: openapi.Response(
+            description='Invalid address response',
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'detail': openapi.Schema(type=openapi.TYPE_STRING),
+                },
+            )
+        )
+    }
+)
+@api_view(http_method_names=['GET'])
+def is_whitelisted_view(request, address):
+
+    try:
+        address = Web3.toChecksumAddress(address)
+    except ValueError:
+        return Response({'detail': 'INVALID_ADDRESS'}, status=400)
+
+    is_whitelisted = Investor.objects.filter(address=address).exists()
+    return Response(is_whitelisted)
