@@ -2,3 +2,7 @@
 .env
 config.yaml
 .idea/
+__pycache__/
+crowdsale/__pycache__/
+crowdsale/*/__pycache__/
+.docker/*
