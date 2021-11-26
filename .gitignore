@@ -8,4 +8,6 @@ crowdsale/*/__pycache__/
 .docker/*
 wp_carbon.pdf
 static/
-static
+static/*
+.idea/*
+.idea
