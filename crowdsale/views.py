@@ -7,6 +7,7 @@ from web3 import Web3
 from eth_account import Account, messages
 from .models import UsdRate
 from datetime import datetime, timedelta
+import logging
 
 
 @swagger_auto_schema(
@@ -55,26 +56,27 @@ def signature_view(request):
         token_address_checksum = Web3.toChecksumAddress(token_address)
         token = config.get_token_by_address(token_address_checksum)
     except ValueError:
+        logging.error(f'INVALID_TOKEN_ADDRESS {token_address}')
         return Response({'detail': 'INVALID_TOKEN_ADDRESS'}, status=400)
 
     contract = config.carbonsale_contract
-    print('contract: ', contract, flush=True)
+    logging.info(f'contract: {contract}')
     current_price = contract.functions.price().call() * 10 ** 9
-    print('current_price: ', current_price, flush=True)
+    logging.info(f'current_price: {current_price}')
     usd_rate = UsdRate.objects.get(symbol=token.cryptocompare_symbol)
     usd_amount_to_pay = amount_to_pay / usd_rate.value
-    print('usd_amount_to_pay: ', usd_amount_to_pay, flush=True)
+    logging.info(f'usd_amount_to_pay: {usd_amount_to_pay}')
     decimals = 10 ** (config.token_decimals - token.decimals)
-    print('decimals: ', decimals, flush=True)
+    logging.info(f'decimals: {decimals}')
     amount_to_receive = int(usd_amount_to_pay / (current_price * decimals))
-    print('first_amount_to_receive: ', amount_to_receive, flush=True)
+    logging.info(f'first_amount_to_receive: {amount_to_receive}')
     if amount_to_receive > 10000000 * 10 ** 9:
         amount_to_receive = amount_to_receive * 1.04
-    print('amount_to_receive: ', amount_to_receive, flush=True)
+    logging.info(f'amount_to_receive: {amount_to_receive}')
     amount_to_receive = int(amount_to_receive)
     signature_expires_at = datetime.now() + timedelta(minutes=config.signature_expiration_timeout_minutes)
     signature_expiration_timestamp = int(signature_expires_at.timestamp())
-    print([token_address_checksum, amount_to_pay, amount_to_receive, signature_expiration_timestamp])
+    logging.info(f'{token_address_checksum, amount_to_pay, amount_to_receive, signature_expiration_timestamp}')
     keccak_hex = Web3.solidityKeccak(
         ['address', 'uint256', 'uint256', 'uint256'],
         [token_address_checksum, amount_to_pay, amount_to_receive, signature_expiration_timestamp]

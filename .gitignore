@@ -6,3 +6,6 @@ __pycache__/
 crowdsale/__pycache__/
 crowdsale/*/__pycache__/
 .docker/*
+wp_carbon.pdf
+static/
+static

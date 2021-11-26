@@ -2,6 +2,7 @@ import dramatiq
 import requests
 from .settings import config
 from .models import UsdRate
+import logging
 
 
 @dramatiq.actor(max_retries=0)
@@ -12,13 +13,14 @@ def update_rates() -> None:
     }
     url = config.cryptocompare_api_url + '/data/price'
     response = requests.get(url, params=payload)
-    print(response.json())
+    logging.info(response.json())
     if response.status_code != 200:
+        logging.error(f'Cannot get USD rates')
         raise Exception(f'Cannot get USD rates')
 
     data = response.json()
     for symbol, rate in data.items():
-        print('new rate', symbol, rate)
+        logging.info(f'new rate {symbol} {rate}')
         try:
             rate_obj = UsdRate.objects.get(symbol=symbol)
         except UsdRate.DoesNotExist:
